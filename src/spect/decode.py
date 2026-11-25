@@ -85,9 +85,15 @@ def generate_once(
     t0 = now()
     try:
         outputs = pair.target.generate(**encoded, **gen_kwargs)
-    except TypeError as exc:
-        # Older transformers may not accept assistant_num_candidate_tokens
-        if mode == "speculative" and "assistant_num_candidate_tokens" in str(exc):
+    except (TypeError, ValueError) as exc:
+        if (
+            mode == "speculative"
+            and "assistant_num_candidate_tokens" in str(exc)
+        ):
+            print(
+                "[spect] Warning: Transformers does not support "
+                "assistant_num_candidate_tokens. Retrying without it."
+            )
             gen_kwargs.pop("assistant_num_candidate_tokens", None)
             outputs = pair.target.generate(**encoded, **gen_kwargs)
         else:
