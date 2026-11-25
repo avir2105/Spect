@@ -35,9 +35,10 @@ def _generation_kwargs(
 
     if assistant_model is not None:
         kwargs["assistant_model"] = assistant_model
-        # HF transformers assisted generation API (version-dependent)
+        # Transformers assisted generation: num_assistant_tokens is the candidate length K.
         if assistant_num_candidate_tokens is not None:
-            kwargs["assistant_num_candidate_tokens"] = assistant_num_candidate_tokens
+            kwargs["num_assistant_tokens"] = assistant_num_candidate_tokens
+            kwargs["num_assistant_tokens_schedule"] = "constant"
     return kwargs
 
 
@@ -86,14 +87,17 @@ def generate_once(
     try:
         outputs = pair.target.generate(**encoded, **gen_kwargs)
     except (TypeError, ValueError) as exc:
-        if (
-            mode == "speculative"
-            and "assistant_num_candidate_tokens" in str(exc)
+        msg = str(exc)
+        if mode == "speculative" and (
+            "num_assistant_tokens" in msg
+            or "assistant_num_candidate_tokens" in msg
         ):
             print(
-                "[spect] Warning: Transformers does not support "
-                "assistant_num_candidate_tokens. Retrying without it."
+                "[spect] Warning: Transformers rejected the assistant "
+                "candidate-token setting. Retrying with the library default."
             )
+            gen_kwargs.pop("num_assistant_tokens", None)
+            gen_kwargs.pop("num_assistant_tokens_schedule", None)
             gen_kwargs.pop("assistant_num_candidate_tokens", None)
             outputs = pair.target.generate(**encoded, **gen_kwargs)
         else:
