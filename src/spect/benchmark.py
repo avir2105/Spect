@@ -33,6 +33,17 @@ def resolve_path(project_root: Path, maybe_relative: str) -> Path:
     return project_root / p
 
 
+def candidate_token_values(config: dict[str, Any]) -> list[int]:
+    raw = config.get("assistant_num_candidate_tokens", 5)
+    if isinstance(raw, (list, tuple)):
+        values = [int(v) for v in raw]
+    else:
+        values = [int(raw)]
+    if not values:
+        raise ValueError("assistant_num_candidate_tokens must contain at least one K")
+    return values
+
+
 def run_benchmark(
     config: dict[str, Any],
     *,
@@ -42,6 +53,7 @@ def run_benchmark(
     limit: int | None = None,
     skip_warmup: bool = False,
     use_fallback_target: bool = False,
+    candidate_tokens: list[int] | None = None,
 ) -> dict[str, Any]:
     seed = int(config.get("seed", 42))
     random.seed(seed)
@@ -82,39 +94,69 @@ def run_benchmark(
                 limit=limit,
                 skip_warmup=skip_warmup,
                 use_fallback_target=True,
+                candidate_tokens=candidate_tokens,
             )
         raise
 
+    ks = candidate_tokens or candidate_token_values(config)
+    print(f"[spect] Candidate lengths K={ks}")
+
     if not skip_warmup:
         print("[spect] Warmup...")
-        warmup(pair, max_new_tokens=min(8, max_new_tokens))
+        warmup(
+            pair,
+            max_new_tokens=min(8, max_new_tokens),
+            assistant_num_candidate_tokens=ks[0],
+        )
 
     results: list[RunResult] = []
-    modes = ("baseline", "speculative")
-    total = len(prompts) * len(modes)
+    total = len(prompts) * (1 + len(ks))
     pbar = tqdm(total=total, desc="benchmark")
+    do_sample = bool(config.get("do_sample", False))
+    temperature = float(config.get("temperature", 0.0))
 
     for item in prompts:
-        for mode in modes:
+        baseline = generate_once(
+            pair,
+            prompt_id=item["id"],
+            category=item.get("category", "unknown"),
+            user_prompt=item["prompt"],
+            mode="baseline",
+            max_new_tokens=max_new_tokens,
+            do_sample=do_sample,
+            temperature=temperature,
+            assistant_num_candidate_tokens=ks[0],
+        )
+        results.append(baseline)
+        pbar.set_postfix(
+            id=item["id"],
+            mode="baseline",
+            tps=f"{baseline.tokens_per_sec:.2f}",
+            toks=baseline.new_tokens,
+        )
+        pbar.update(1)
+        base_ids = baseline.extra.get("new_token_ids")
+        for k in ks:
             result = generate_once(
                 pair,
                 prompt_id=item["id"],
                 category=item.get("category", "unknown"),
                 user_prompt=item["prompt"],
-                mode=mode,
+                mode="speculative",
                 max_new_tokens=max_new_tokens,
-                do_sample=bool(config.get("do_sample", False)),
-                temperature=float(config.get("temperature", 0.0)),
-                assistant_num_candidate_tokens=int(
-                    config.get("assistant_num_candidate_tokens", 5)
-                ),
+                do_sample=do_sample,
+                temperature=temperature,
+                assistant_num_candidate_tokens=k,
             )
+            result.extra["tokens_match"] = result.extra.get("new_token_ids") == base_ids
             results.append(result)
             pbar.set_postfix(
                 id=item["id"],
-                mode=mode,
+                mode="speculative",
+                k=k,
                 tps=f"{result.tokens_per_sec:.2f}",
-                toks=result.new_tokens,
+                match="Y" if result.extra["tokens_match"] else "N",
+                acc=result.extra.get("acceptance_rate"),
             )
             pbar.update(1)
     pbar.close()
@@ -127,9 +169,7 @@ def run_benchmark(
         "device": pair.device,
         "load_in_4bit": pair.load_in_4bit,
         "max_new_tokens": max_new_tokens,
-        "assistant_num_candidate_tokens": config.get(
-            "assistant_num_candidate_tokens", 5
-        ),
+        "assistant_num_candidate_tokens": ks[0] if len(ks) == 1 else ks,
         "n_prompts": len(prompts),
         "cuda_available": torch.cuda.is_available(),
         "cuda_device_name": (

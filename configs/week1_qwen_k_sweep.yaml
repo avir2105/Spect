@@ -1,0 +1,15 @@
+# Same Week 1 models. Sweep candidate length K and keep one shared baseline.
+name: week1_qwen_k_sweep
+draft_model: Qwen/Qwen2.5-0.5B-Instruct
+target_model: Qwen/Qwen2.5-3B-Instruct
+load_in_4bit: true
+torch_dtype: float16
+max_new_tokens: 128
+assistant_num_candidate_tokens: [2, 4, 8]
+temperature: 0.0
+do_sample: false
+prompts_path: data/prompts.json
+output_dir: results
+seed: 42
+
+fallback_target_model: Qwen/Qwen2.5-7B-Instruct

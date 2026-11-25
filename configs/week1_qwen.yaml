@@ -5,7 +5,7 @@ target_model: Qwen/Qwen2.5-3B-Instruct
 load_in_4bit: true
 torch_dtype: float16
 max_new_tokens: 128
-# Number of candidate tokens the draft proposes per verification step (HF assisted gen)
+# Candidate length K. Transformers reads this from the draft generation_config.
 assistant_num_candidate_tokens: 5
 temperature: 0.0
 do_sample: false

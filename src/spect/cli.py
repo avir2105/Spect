@@ -50,6 +50,12 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Force fallback_target_model from config",
     )
+    p.add_argument(
+        "--candidate-tokens",
+        type=str,
+        default=None,
+        help="Comma-separated candidate lengths K, e.g. 2,4,8",
+    )
     return p
 
 
@@ -64,6 +70,11 @@ def main(argv: list[str] | None = None) -> int:
         return 1
 
     config = load_config(config_path)
+    candidate_tokens = None
+    if args.candidate_tokens:
+        candidate_tokens = [
+            int(part) for part in args.candidate_tokens.split(",") if part.strip()
+        ]
     run_benchmark(
         config,
         project_root=root,
@@ -72,6 +83,7 @@ def main(argv: list[str] | None = None) -> int:
         limit=args.limit,
         skip_warmup=args.skip_warmup,
         use_fallback_target=args.fallback_target,
+        candidate_tokens=candidate_tokens,
     )
     return 0
 
