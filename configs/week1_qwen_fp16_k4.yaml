@@ -1,0 +1,15 @@
+# Lossless check: same prompts and K=4 as the 4-bit sweep, target in fp16.
+# Writes results/week1_qwen_fp16_k4.json and does not replace the 4-bit sweep.
+# No 7B fallback: an OOM should fail here instead of loading a larger model.
+name: week1_qwen_fp16_k4
+draft_model: Qwen/Qwen2.5-0.5B-Instruct
+target_model: Qwen/Qwen2.5-3B-Instruct
+load_in_4bit: false
+torch_dtype: float16
+max_new_tokens: 128
+assistant_num_candidate_tokens: 4
+temperature: 0.0
+do_sample: false
+prompts_path: data/prompts.json
+output_dir: results
+seed: 42
