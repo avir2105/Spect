@@ -1,0 +1,13 @@
+# Optional: larger 7B target if 3B leaves VRAM headroom on T4
+name: week1_qwen_7b
+draft_model: Qwen/Qwen2.5-0.5B-Instruct
+target_model: Qwen/Qwen2.5-7B-Instruct
+load_in_4bit: true
+torch_dtype: float16
+max_new_tokens: 128
+assistant_num_candidate_tokens: 5
+temperature: 0.0
+do_sample: false
+prompts_path: data/prompts.json
+output_dir: results
+seed: 42

@@ -1,0 +1,42 @@
+[
+  {
+    "id": "chat_intro",
+    "category": "chat",
+    "prompt": "Explain speculative decoding in simple terms for a software engineer who knows transformers but not inference optimization."
+  },
+  {
+    "id": "chat_list",
+    "category": "chat",
+    "prompt": "List five practical ways to reduce LLM inference latency in production. Give one sentence per item."
+  },
+  {
+    "id": "code_fib",
+    "category": "code",
+    "prompt": "Write a Python function that returns the nth Fibonacci number using iteration. Include a short docstring and one example in a comment."
+  },
+  {
+    "id": "code_bug",
+    "category": "code",
+    "prompt": "Find the bug in this Python snippet and rewrite the fixed version only:\n\ndef average(nums):\n    return sum(nums) / len(nums) if nums else 0\nprint(average([]))\nprint(average([1, 2, 3]))"
+  },
+  {
+    "id": "short_fact",
+    "category": "short",
+    "prompt": "What is the capital of France? Answer in one sentence."
+  },
+  {
+    "id": "short_math",
+    "category": "short",
+    "prompt": "Compute 17 * 19. Show only the final integer."
+  },
+  {
+    "id": "long_summary",
+    "category": "long",
+    "prompt": "Summarize why draft and target models in speculative decoding should usually share a tokenizer vocabulary, and what goes wrong when they do not. Aim for about 120 words."
+  },
+  {
+    "id": "long_howto",
+    "category": "long",
+    "prompt": "Describe a careful benchmark plan to compare baseline autoregressive decoding vs assisted speculative decoding on a single 16GB GPU. Include metrics to collect and one common pitfall."
+  }
+]
